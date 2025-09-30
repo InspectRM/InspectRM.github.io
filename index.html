@@ -18,39 +18,158 @@
             justify-content: center;
             align-items: center;
             font-family: 'Arial', sans-serif;
+            overflow: hidden;
         }
 
         .hello-container {
             text-align: center;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 3rem 4rem;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 4rem 5rem;
+            border-radius: 25px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hello-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shine 6s infinite linear;
         }
 
         h1 {
             color: white;
-            font-size: 4rem;
+            font-size: 5rem;
             margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            animation: glow 2s ease-in-out infinite alternate;
+            text-shadow: 
+                3px 3px 6px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(255, 255, 255, 0.3);
+            animation: breathe 4s ease-in-out infinite;
+            position: relative;
+            z-index: 2;
         }
 
         .subtitle {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.2rem;
-            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.3rem;
+            letter-spacing: 4px;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            position: relative;
+            z-index: 2;
+            animation: fadeIn 2s ease-out;
         }
 
-        @keyframes glow {
+        .decoration {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .orb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .orb:nth-child(1) {
+            animation-delay: 0s;
+            background: rgba(255, 107, 107, 0.8);
+        }
+
+        .orb:nth-child(2) {
+            animation-delay: 0.5s;
+            background: rgba(255, 206, 107, 0.8);
+        }
+
+        .orb:nth-child(3) {
+            animation-delay: 1s;
+            background: rgba(107, 255, 157, 0.8);
+        }
+
+        .orb:nth-child(4) {
+            animation-delay: 1.5s;
+            background: rgba(107, 178, 255, 0.8);
+        }
+
+        .highlight {
+            color: #ffeb3b;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+        }
+
+        @keyframes breathe {
+            0%, 100% { 
+                transform: scale(1);
+                letter-spacing: 2px;
+            }
+            50% { 
+                transform: scale(1.05);
+                letter-spacing: 4px;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% { 
+                transform: scale(1.5);
+                opacity: 1;
+            }
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        @keyframes fadeIn {
             from {
-                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+                opacity: 0;
+                transform: translateY(20px);
             }
             to {
-                text-shadow: 2px 2px 20px rgba(255, 255, 255, 0.4),
-                           2px 2px 30px rgba(255, 255, 255, 0.2);
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .hello-container {
+                padding: 3rem 2rem;
+                margin: 1rem;
+            }
+            
+            h1 {
+                font-size: 3rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+                letter-spacing: 2px;
             }
         }
     </style>
@@ -58,7 +177,16 @@
 <body>
     <div class="hello-container">
         <h1>Hello World!</h1>
-        <p class="subtitle">Welcome to the web</p>
+        <p class="subtitle">Have <span class="highlight">a good</span> DAY</p>
+        
+        <div class="decoration">
+            <div class="orb"></div>
+            <div class="orb"></div>
+            <div class="orb"></div>
+            <div class="orb"></div>
+        </div>
+        
+        <p class="subtitle">Intro to git day 3</p>
     </div>
 </body>
 </html>
