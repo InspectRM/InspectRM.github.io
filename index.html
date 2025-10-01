@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+    <title>Hello World Enhanced</title>
     <style>
         * {
             margin: 0;
@@ -19,6 +19,7 @@
             align-items: center;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
+            transition: background 1.5s ease;
         }
 
         .hello-container {
@@ -33,6 +34,15 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             position: relative;
             overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .hello-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
 
         .hello-container::before {
@@ -90,6 +100,12 @@
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.6);
             animation: pulse 2s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .orb:hover {
+            transform: scale(1.8);
         }
 
         .orb:nth-child(1) {
@@ -116,6 +132,46 @@
             color: #ffeb3b;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .click-counter {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            font-size: 0.9rem;
+        }
+
+        .floating-text {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.1);
+            font-size: 8rem;
+            font-weight: bold;
+            z-index: 0;
+            animation: floatAround 20s infinite linear;
         }
 
         @keyframes breathe {
@@ -156,6 +212,27 @@
             }
         }
 
+        @keyframes floatAround {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(100px, -50px) rotate(90deg); }
+            50% { transform: translate(50px, 100px) rotate(180deg); }
+            75% { transform: translate(-100px, 50px) rotate(270deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
+        /* Dark theme */
+        body.dark-theme {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        body.sunset-theme {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+        }
+
+        body.ocean-theme {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .hello-container {
@@ -171,22 +248,115 @@
                 font-size: 1rem;
                 letter-spacing: 2px;
             }
+            
+            .floating-text {
+                font-size: 4rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="hello-container">
-        <h1>Hello World!</h1>
-        <p class="subtitle">Have <span class="highlight">a good</span> DAY</p>
+    <button class="theme-toggle" onclick="changeTheme()">🎨 Change Theme</button>
+    <div class="click-counter">Clicks: <span id="clickCount">0</span></div>
+
+    <div class="floating-text">HELLO</div>
+    <div class="floating-text" style="animation-delay: -5s;">WORLD</div>
+    <div class="floating-text" style="animation-delay: -10s;">CSS</div>
+    <div class="floating-text" style="animation-delay: -15s;">JS</div>
+
+    <div class="hello-container" onclick="handleClick()">
+        <h1 id="mainTitle">Hello World!</h1>
+        <p class="subtitle">BEAUTIFUL <span class="highlight">INTERACTIVE</span> DESIGN</p>
         
         <div class="decoration">
-            <div class="orb"></div>
-            <div class="orb"></div>
-            <div class="orb"></div>
-            <div class="orb"></div>
+            <div class="orb" onclick="changeOrbColor(event, this)"></div>
+            <div class="orb" onclick="changeOrbColor(event, this)"></div>
+            <div class="orb" onclick="changeOrbColor(event, this)"></div>
+            <div class="orb" onclick="changeOrbColor(event, this)"></div>
         </div>
         
-        <p class="subtitle">Intro to git day 3</p>
+        <p class="subtitle" id="dynamicText">CLICK ANYWHERE • CHANGE COLORS • HAVE FUN</p>
     </div>
+
+    <script>
+        let clickCount = 0;
+        let themeIndex = 0;
+        const themes = ['default', 'dark-theme', 'sunset-theme', 'ocean-theme'];
+        const greetings = ['Hello World!', 'Hola Mundo!', 'Bonjour Monde!', 'Hallo Welt!', 'Ciao Mondo!'];
+        let greetingIndex = 0;
+
+        function handleClick() {
+            clickCount++;
+            document.getElementById('clickCount').textContent = clickCount;
+            
+            // Change greeting text occasionally
+            if (clickCount % 5 === 0) {
+                greetingIndex = (greetingIndex + 1) % greetings.length;
+                document.getElementById('mainTitle').textContent = greetings[greetingIndex];
+                
+                // Add a little animation
+                const title = document.getElementById('mainTitle');
+                title.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    title.style.transform = 'scale(1)';
+                }, 300);
+            }
+            
+            // Change background color slightly on each click
+            document.body.style.background = getRandomGradient();
+        }
+
+        function changeTheme() {
+            themeIndex = (themeIndex + 1) % themes.length;
+            document.body.className = themes[themeIndex];
+        }
+
+        function changeOrbColor(event, orb) {
+            event.stopPropagation(); // Prevent container click
+            const colors = [
+                'rgba(255, 107, 107, 0.8)',
+                'rgba(255, 206, 107, 0.8)',
+                'rgba(107, 255, 157, 0.8)',
+                'rgba(107, 178, 255, 0.8)',
+                'rgba(178, 107, 255, 0.8)',
+                'rgba(255, 107, 255, 0.8)'
+            ];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            orb.style.background = randomColor;
+        }
+
+        function getRandomGradient() {
+            const hues = [
+                '135deg, #667eea 0%, #764ba2 100%',
+                '135deg, #f093fb 0%, #f5576c 100%',
+                '135deg, #4facfe 0%, #00f2fe 100%',
+                '135deg, #43e97b 0%, #38f9d7 100%',
+                '135deg, #fa709a 0%, #fee140 100%',
+                '135deg, #a8edea 0%, #fed6e3 100%'
+            ];
+            return `linear-gradient(${hues[Math.floor(Math.random() * hues.length)]})`;
+        }
+
+        // Add some floating particles
+        document.addEventListener('DOMContentLoaded', function() {
+            for (let i = 0; i < 15; i++) {
+                createFloatingText();
+            }
+        });
+
+        function createFloatingText() {
+            const texts = ['★', '●', '◆', '▲', '❤', '☆'];
+            const text = texts[Math.floor(Math.random() * texts.length)];
+            const floatingText = document.createElement('div');
+            floatingText.className = 'floating-text';
+            floatingText.textContent = text;
+            floatingText.style.left = Math.random() * 100 + 'vw';
+            floatingText.style.top = Math.random() * 100 + 'vh';
+            floatingText.style.animationDuration = (15 + Math.random() * 20) + 's';
+            floatingText.style.fontSize = (2 + Math.random() * 4) + 'rem';
+            floatingText.style.color = `rgba(255, 255, 255, ${0.05 + Math.random() * 0.1})`;
+            document.body.appendChild(floatingText);
+        }
+    </script>
 </body>
 </html>
