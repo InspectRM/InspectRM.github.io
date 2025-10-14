@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../game/state/store';
-import { increaseBet, decreaseBet, offerBiscuits } from '../../game/state/gameSlice';
-import { WIN_PATTERNS } from '../../game/state/gameSlice';
+import { increaseBet, decreaseBet, offerBiscuits, WIN_PATTERNS } from '../../game/state/gameSlice';
 
 // Pattern Guide Component
 const PatternGuide: React.FC<{ isOpen: boolean; onToggle: () => void }> = ({ isOpen, onToggle }) => {

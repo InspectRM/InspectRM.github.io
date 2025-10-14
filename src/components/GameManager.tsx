@@ -20,6 +20,9 @@ export const GameManager: React.FC = () => {
     
     console.log('Spin button clicked');
     
+    // Prevent focus that might cause scrolling
+    (event.target as HTMLButtonElement)?.blur();
+    
     // Just dispatch placeBet - the calculation happens in the slice
     dispatch(placeBet());
   };

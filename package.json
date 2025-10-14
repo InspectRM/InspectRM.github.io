@@ -2,13 +2,14 @@
   "name": "soul-reaper-slots",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://inspectrm.github.io/",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+      "predeploy": "npm run build",
+      "deploy": "gh-pages -d dist",
+      "build": "vite build",
+      "dev": "vite"
+    },
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
     "howler": "^2.2.4",

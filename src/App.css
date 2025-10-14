@@ -1929,3 +1929,221 @@ button:focus {
   font-size: 0.7em;
   font-weight: bold;
 }
+
+/* Enhanced Win Display Styles */
+.enhanced-win {
+  animation: winAppear 0.8s cubic-bezier(0.4, 0, 0.2, 1), winPulse 2s ease-in-out 3;
+  border: 6px solid var(--gold) !important;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(139, 0, 0, 0.3)) !important;
+  box-shadow: 
+    0 0 80px var(--gold),
+    0 0 120px rgba(255, 215, 0, 0.6),
+    inset 0 0 50px rgba(255, 215, 0, 0.3) !important;
+}
+
+.win-amount-display {
+  text-align: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(139, 0, 0, 0.3));
+  border-radius: 15px;
+  border: 3px solid var(--gold);
+}
+
+.win-amount {
+  display: block;
+  font-size: 4em;
+  font-weight: bold;
+  color: var(--gold);
+  text-shadow: 
+    0 0 20px var(--gold),
+    0 0 40px var(--gold),
+    0 0 60px var(--gold);
+  animation: numberPop 0.6s ease-out;
+  margin-bottom: 10px;
+}
+
+.win-label {
+  display: block;
+  font-size: 1.5em;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-weight: bold;
+}
+
+.win-celebration {
+  text-align: center;
+  margin-top: 20px;
+  padding: 15px;
+  font-size: 1.8em;
+  font-weight: bold;
+  color: var(--bright-red);
+  text-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+  animation: celebrationPulse 1.5s ease-in-out infinite;
+  border-top: 2px solid rgba(255, 215, 0, 0.5);
+  border-bottom: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+@keyframes winPulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 
+      0 0 80px var(--gold),
+      0 0 120px rgba(255, 215, 0, 0.6),
+      inset 0 0 50px rgba(255, 215, 0, 0.3);
+  }
+  50% { 
+    transform: scale(1.02);
+    box-shadow: 
+      0 0 100px var(--gold),
+      0 0 150px rgba(255, 215, 0, 0.8),
+      inset 0 0 60px rgba(255, 215, 0, 0.4);
+  }
+}
+
+@keyframes numberPop {
+  0% { 
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  70% { 
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes celebrationPulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Enhanced Symbol Win Effects */
+.symbol.winning {
+  animation: symbolWin 0.6s ease-out 3 !important;
+}
+
+@keyframes symbolWin {
+  0%, 100% { 
+    transform: scale(1.15);
+    box-shadow: 
+      0 0 30px currentColor,
+      0 0 60px currentColor;
+  }
+  50% { 
+    transform: scale(1.25);
+    box-shadow: 
+      0 0 50px currentColor,
+      0 0 100px currentColor;
+  }
+}
+
+/* Better payline visibility */
+.payline {
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+.symbol.winning ~ .paylines-overlay .payline {
+  opacity: 0.9;
+  animation: paylineGlow 1s ease-in-out infinite;
+}
+
+@keyframes paylineGlow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Enhanced journal entries for wins */
+.journal-entry:has(.entry-text:contains("🎉")) {
+  background: rgba(75, 0, 130, 0.4) !important;
+  border-left: 4px solid var(--gold) !important;
+  animation: journalWinGlow 2s ease;
+}
+
+.journal-entry:has(.entry-text:contains("⚰️")) {
+  background: rgba(139, 0, 0, 0.4) !important;
+  border-left: 4px solid var(--bright-red) !important;
+  animation: journalReaperGlow 2s ease;
+}
+
+@keyframes journalWinGlow {
+  0% { 
+    background: rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+  100% { 
+    background: rgba(75, 0, 130, 0.4);
+    box-shadow: none;
+  }
+}
+
+@keyframes journalReaperGlow {
+  0% { 
+    background: rgba(255, 68, 68, 0.3);
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+  }
+  100% { 
+    background: rgba(139, 0, 0, 0.4);
+    box-shadow: none;
+  }
+}
+
+/* Better win combo display */
+.win-combo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px;
+  margin: 8px 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  border-left: 4px solid var(--gold);
+  animation: comboSlide 0.5s ease-out;
+}
+
+@keyframes comboSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.combo-symbols {
+  display: flex;
+  gap: 8px;
+}
+
+.combo-symbol {
+  font-size: 1.8em;
+  animation: comboBounce 0.8s ease-in-out;
+}
+
+@keyframes comboBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-15px) scale(1.2); }
+  50% { transform: translateY(0) scale(1.1); }
+  75% { transform: translateY(-8px) scale(1.15); }
+}
+
+.combo-payout {
+  color: var(--gold);
+  font-weight: bold;
+  font-size: 1.2em;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+}

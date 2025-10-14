@@ -92,7 +92,7 @@ const initialState: GameState = {
 export const SYMBOLS: { [key: string]: Symbol } = {
   skull: { 
     id: 'skull', 
-    weight: 20, 
+    weight: 25,  // Increased from 20
     payout: 2, 
     horrorEffect: 'skull_reveal', 
     satisfactionChange: 1,
@@ -101,7 +101,7 @@ export const SYMBOLS: { [key: string]: Symbol } = {
   },
   soul: { 
     id: 'soul', 
-    weight: 15, 
+    weight: 20,  // Increased from 15
     payout: 3, 
     horrorEffect: 'soul_harvest', 
     satisfactionChange: 2,
@@ -110,7 +110,7 @@ export const SYMBOLS: { [key: string]: Symbol } = {
   },
   biscuit: { 
     id: 'biscuit', 
-    weight: 10, 
+    weight: 15,  // Increased from 10
     payout: 5, 
     horrorEffect: 'biscuit_offer', 
     satisfactionChange: 5,
@@ -119,7 +119,7 @@ export const SYMBOLS: { [key: string]: Symbol } = {
   },
   reaper: { 
     id: 'reaper', 
-    weight: 5, 
+    weight: 10,  // Increased from 5
     payout: 10, 
     horrorEffect: 'reaper_appear', 
     satisfactionChange: 10,
@@ -128,7 +128,7 @@ export const SYMBOLS: { [key: string]: Symbol } = {
   },
   void: { 
     id: 'void', 
-    weight: 50, 
+    weight: 30,  // Reduced from 50
     payout: 0, 
     horrorEffect: 'void_whisper', 
     satisfactionChange: -1,
@@ -233,7 +233,7 @@ export const WIN_PATTERNS: WinPattern[] = [
   }
 ];
 
-// Enhanced slot engine with pattern matching
+// Enhanced slot engine with BETTER win detection
 export const simpleSlotEngine = {
   calculateSpinResult: (bet: number, upgrades: string[] = []): SpinResult => {
     const generateReels = (): string[][] => {
@@ -265,19 +265,68 @@ export const simpleSlotEngine = {
       const winningCombos: WinningCombo[] = [];
       const activePatterns: WinPattern[] = [];
 
-      // Check each win pattern
+      // NEW: First check for basic horizontal lines (traditional slot wins)
+      for (let row = 0; row < 3; row++) {
+        const firstSymbol = reels[0][row];
+        if (firstSymbol === 'void') continue; // Skip voids for basic lines
+        
+        // Check if all reels in this row have the same symbol
+        const allMatch = reels[1][row] === firstSymbol && reels[2][row] === firstSymbol;
+        
+        if (allMatch) {
+          winningCombos.push({
+            symbol: firstSymbol,
+            count: 3,
+            payout: SYMBOLS[firstSymbol].payout,
+            positions: [[0, row], [1, row], [2, row]]
+          });
+          
+          // Add corresponding horizontal pattern
+          const patternId = `horizontal-${row + 1}`;
+          const pattern = WIN_PATTERNS.find(p => p.id === patternId);
+          if (pattern) {
+            activePatterns.push(pattern);
+          }
+        }
+      }
+
+      // NEW: Check for vertical lines
+      for (let col = 0; col < 3; col++) {
+        const firstSymbol = reels[col][0];
+        if (firstSymbol === 'void') continue;
+        
+        const allMatch = reels[col][1] === firstSymbol && reels[col][2] === firstSymbol;
+        
+        if (allMatch) {
+          winningCombos.push({
+            symbol: firstSymbol,
+            count: 3,
+            payout: SYMBOLS[firstSymbol].payout * 1.2, // Bonus for vertical
+            positions: [[col, 0], [col, 1], [col, 2]]
+          });
+          
+          const patternId = `vertical-${col + 1}`;
+          const pattern = WIN_PATTERNS.find(p => p.id === patternId);
+          if (pattern) {
+            activePatterns.push(pattern);
+          }
+        }
+      }
+
+      // Check special patterns (diagonals and special shapes)
       WIN_PATTERNS.forEach(pattern => {
+        // Skip basic horizontals and verticals we already checked
+        if (pattern.type === 'horizontal' || pattern.type === 'vertical') return;
+        
         const positions = pattern.positions;
         const firstSymbol = reels[positions[0][0]][positions[0][1]];
         
-        // Skip if first position is void
+        // Allow void in special patterns but with reduced payout
         if (firstSymbol === 'void') return;
         
-        // Check if all positions in pattern match the first symbol
         const allMatch = positions.every(([reel, row]) => reels[reel][row] === firstSymbol);
         
         if (allMatch) {
-          // Add to winning combos
           winningCombos.push({
             symbol: firstSymbol,
             count: positions.length,
@@ -285,10 +334,40 @@ export const simpleSlotEngine = {
             positions: positions
           });
           
-          // Add to active patterns
           activePatterns.push(pattern);
         }
       });
+
+      // NEW: Check for 2-of-a-kind wins (more forgiving)
+      for (let row = 0; row < 3; row++) {
+        const symbolsInRow = [reels[0][row], reels[1][row], reels[2][row]];
+        const symbolCounts: { [key: string]: number } = {};
+        
+        symbolsInRow.forEach(symbol => {
+          if (symbol !== 'void') {
+            symbolCounts[symbol] = (symbolCounts[symbol] || 0) + 1;
+          }
+        });
+        
+        // Check for 2 matching symbols (not void)
+        Object.entries(symbolCounts).forEach(([symbol, count]) => {
+          if (count >= 2) {
+            const positions = [];
+            for (let i = 0; i < 3; i++) {
+              if (reels[i][row] === symbol) {
+                positions.push([i, row]);
+              }
+            }
+            
+            winningCombos.push({
+              symbol: symbol,
+              count: count,
+              payout: SYMBOLS[symbol].payout * 0.5 * count, // Half payout for partial wins
+              positions: positions
+            });
+          }
+        });
+      }
 
       return { winningCombos, activePatterns };
     };
@@ -300,32 +379,43 @@ export const simpleSlotEngine = {
         totalWin += combo.payout * betAmount;
       });
       
-      // Jackpot for all reapers in any pattern
+      // NEW: Small consolation for no wins
+      if (totalWin === 0) {
+        // Check if there are any non-void symbols
+        const hasNonVoid = winningCombos.some(combo => combo.symbol !== 'void');
+        if (!hasNonVoid) {
+          totalWin = betAmount * 0.1; // 10% refund for all voids
+        }
+      }
+      
+      // Jackpot for all reapers
       if (winningCombos.length > 0 && winningCombos.every(combo => combo.symbol === 'reaper')) {
         totalWin += 1000 * betAmount;
       }
       
-      return totalWin;
+      return Math.floor(totalWin);
     };
 
     const calculateHorrorIncrease = (winningCombos: WinningCombo[]): number => {
       let horror = 0;
       
       winningCombos.forEach(combo => {
-        horror += SYMBOLS[combo.symbol].payout * 2;
+        horror += SYMBOLS[combo.symbol].payout;
       });
       
-      return Math.min(horror, 30);
+      // NEW: Less horror for small wins, more for big wins
+      return Math.min(horror * 2, 25);
     };
 
     const calculateSatisfactionChange = (winningCombos: WinningCombo[]): number => {
-      let satisfaction = 0;
+      if (winningCombos.length === 0) return -2;
       
+      let satisfaction = 0;
       winningCombos.forEach(combo => {
         satisfaction += SYMBOLS[combo.symbol].satisfactionChange;
       });
       
-      return satisfaction || -2; // -2 if no wins
+      return satisfaction;
     };
 
     const generateJournalEntry = (winAmount: number, winningCombos: WinningCombo[], activePatterns: WinPattern[]): string => {
@@ -346,11 +436,6 @@ export const simpleSlotEngine = {
         return 'DEATH SMILES UPON YOU! The Reaper is pleased.';
       }
       
-      if (activePatterns.some(pattern => pattern.type === 'special')) {
-        const specialPattern = activePatterns.find(p => p.type === 'special');
-        return `Ancient pattern activated: ${specialPattern?.name}!`;
-      }
-      
       if (winningCombos.some(combo => combo.symbol === 'biscuit')) {
         return 'A biscuit offering! The Reaper accepts your tribute.';
       }
@@ -359,19 +444,36 @@ export const simpleSlotEngine = {
         return 'Multiple blessings! The underworld favors you.';
       }
       
-      const winEntries = [
-        'The spirits grant you a small boon...',
-        'A whisper of power flows through you...',
-        'The darkness yields its secrets...',
-        'Souls gather at your command...'
-      ];
-      return winEntries[Math.floor(Math.random() * winEntries.length)];
+      // NEW: Different messages based on win size
+      if (winAmount > 50) {
+        return 'A substantial offering! The Reaper nods in approval.';
+      } else if (winAmount > 20) {
+        return 'The spirits grant you a worthy boon...';
+      } else {
+        const winEntries = [
+          'A whisper of power flows through you...',
+          'The darkness yields its secrets...',
+          'Souls gather at your command...',
+          'A small victory in the endless night...'
+        ];
+        return winEntries[Math.floor(Math.random() * winEntries.length)];
+      }
     };
 
     const reels = generateReels();
     const { winningCombos, activePatterns } = checkWinningCombinations(reels);
     const winAmount = calculateTotalWin(winningCombos, bet);
     const horrorIncrease = calculateHorrorIncrease(winningCombos);
+    
+    console.log('Spin Results:', {
+      reels,
+      winningCombos: winningCombos.map(wc => ({
+        symbol: wc.symbol,
+        payout: wc.payout,
+        count: wc.count
+      })),
+      totalWin: winAmount
+    });
     
     return {
       reels,
@@ -409,6 +511,8 @@ export const gameSlice = createSlice({
       if (!state.lastSpinResult) return;
       
       const result = state.lastSpinResult;
+      
+      // Update all state first
       state.isSpinning = false;
       state.currentReels = result.reels;
       state.winningCombos = result.winningCombos;
@@ -453,7 +557,7 @@ export const gameSlice = createSlice({
         state.journalEntries.push('The darkness whispers terrible secrets...');
       }
 
-      // Clear the stored result
+      // Clear the stored result AFTER all updates are complete
       state.lastSpinResult = undefined;
     },
     purchaseUpgrade: (state, action: PayloadAction<Upgrade>) => {
