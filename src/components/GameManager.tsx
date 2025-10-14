@@ -7,22 +7,31 @@ import { PlayerHUD } from './PlayerUI/PlayerHUD';
 import { Journal } from './PlayerUI/Journal';
 import { UpgradeShop } from './UpgradeShop/UpgradeShop';
 import { GameStats } from './PlayerUI/GameStats';
-import { simpleSlotEngine } from '../game/state/gameSlice';
 
 export const GameManager: React.FC = () => {
   const dispatch = useDispatch();
   const gameState = useSelector((state: RootState) => state.game);
 
-  const handleSpinStart = () => {
+  const handleSpin = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (gameState.isSpinning || gameState.souls < gameState.currentBet) return;
+    
+    console.log('Spin button clicked');
+    
+    // Just dispatch placeBet - the calculation happens in the slice
     dispatch(placeBet());
   };
 
+  const handleSpinStart = () => {
+    console.log('Spin animation started');
+  };
+
   const handleSpinComplete = () => {
-    const result = simpleSlotEngine.calculateSpinResult(
-      gameState.currentBet,
-      gameState.unlockedUpgrades
-    );
-    dispatch(resolveSpin(result));
+    console.log('Spin animation completed, resolving spin');
+    // Resolve the spin with the pre-stored result
+    dispatch(resolveSpin());
   };
 
   return (
@@ -60,7 +69,18 @@ export const GameManager: React.FC = () => {
             isSpinning={gameState.isSpinning}
             onSpinStart={handleSpinStart}
             onSpinComplete={handleSpinComplete}
+            lastSpinResult={gameState.lastSpinResult}
           />
+
+          <div className="spin-controls">
+            <button 
+              className="spin-button"
+              onClick={handleSpin}
+              disabled={gameState.isSpinning || gameState.souls < gameState.currentBet}
+            >
+              {gameState.isSpinning ? 'REAPING SOULS...' : `OFFER ${gameState.currentBet} SOULS`}
+            </button>
+          </div>
 
           <UpgradeShop />
         </div>

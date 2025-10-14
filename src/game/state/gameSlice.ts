@@ -1,5 +1,5 @@
 // src/game/state/gameSlice.ts
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 // Define interfaces
 export interface Symbol {
@@ -19,6 +19,15 @@ export interface WinningCombo {
   positions: number[][];
 }
 
+export interface WinPattern {
+  id: string;
+  name: string;
+  description: string;
+  positions: number[][]; // [[reel, row], [reel, row], ...]
+  multiplier: number;
+  type: 'horizontal' | 'vertical' | 'diagonal' | 'special';
+}
+
 export interface SpinResult {
   reels: string[][];
   winAmount: number;
@@ -26,6 +35,7 @@ export interface SpinResult {
   satisfactionChange: number;
   newJournalEntry?: string;
   winningCombos: WinningCombo[];
+  activePatterns: WinPattern[];
 }
 
 export interface Upgrade {
@@ -52,6 +62,8 @@ export interface GameState {
   totalSpins: number;
   totalWins: number;
   biggestWin: number;
+  lastSpinResult?: SpinResult;
+  activePatterns: WinPattern[];
 }
 
 const initialState: GameState = {
@@ -72,7 +84,8 @@ const initialState: GameState = {
   winningCombos: [],
   totalSpins: 0,
   totalWins: 0,
-  biggestWin: 0
+  biggestWin: 0,
+  activePatterns: []
 };
 
 // Symbol configurations
@@ -124,7 +137,103 @@ export const SYMBOLS: { [key: string]: Symbol } = {
   }
 };
 
-// Simple slot engine for the slice
+// Define win patterns
+export const WIN_PATTERNS: WinPattern[] = [
+  // Horizontal Lines
+  {
+    id: 'horizontal-1',
+    name: 'Top Line',
+    description: 'Match symbols across the top row',
+    positions: [[0, 0], [1, 0], [2, 0]],
+    multiplier: 1,
+    type: 'horizontal'
+  },
+  {
+    id: 'horizontal-2',
+    name: 'Center Line',
+    description: 'Match symbols across the center row',
+    positions: [[0, 1], [1, 1], [2, 1]],
+    multiplier: 1.5,
+    type: 'horizontal'
+  },
+  {
+    id: 'horizontal-3',
+    name: 'Bottom Line',
+    description: 'Match symbols across the bottom row',
+    positions: [[0, 2], [1, 2], [2, 2]],
+    multiplier: 1,
+    type: 'horizontal'
+  },
+  // Vertical Lines
+  {
+    id: 'vertical-1',
+    name: 'Left Column',
+    description: 'Match symbols down the left column',
+    positions: [[0, 0], [0, 1], [0, 2]],
+    multiplier: 1.2,
+    type: 'vertical'
+  },
+  {
+    id: 'vertical-2',
+    name: 'Center Column',
+    description: 'Match symbols down the center column',
+    positions: [[1, 0], [1, 1], [1, 2]],
+    multiplier: 1.5,
+    type: 'vertical'
+  },
+  {
+    id: 'vertical-3',
+    name: 'Right Column',
+    description: 'Match symbols down the right column',
+    positions: [[2, 0], [2, 1], [2, 2]],
+    multiplier: 1.2,
+    type: 'vertical'
+  },
+  // Diagonal Lines
+  {
+    id: 'diagonal-1',
+    name: 'Main Diagonal',
+    description: 'Match symbols diagonally top-left to bottom-right',
+    positions: [[0, 0], [1, 1], [2, 2]],
+    multiplier: 2,
+    type: 'diagonal'
+  },
+  {
+    id: 'diagonal-2',
+    name: 'Anti-Diagonal',
+    description: 'Match symbols diagonally top-right to bottom-left',
+    positions: [[2, 0], [1, 1], [0, 2]],
+    multiplier: 2,
+    type: 'diagonal'
+  },
+  // Special Patterns
+  {
+    id: 'cross',
+    name: 'Holy Cross',
+    description: 'Match symbols in a cross pattern',
+    positions: [[0, 1], [1, 0], [1, 1], [1, 2], [2, 1]],
+    multiplier: 3,
+    type: 'special'
+  },
+  {
+    id: 'corners',
+    name: 'Four Corners',
+    description: 'Match symbols in all four corners',
+    positions: [[0, 0], [0, 2], [2, 0], [2, 2]],
+    multiplier: 2.5,
+    type: 'special'
+  },
+  {
+    id: 'full-grid',
+    name: 'Reaper\'s Blessing',
+    description: 'Match symbols across entire grid',
+    positions: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
+    multiplier: 5,
+    type: 'special'
+  }
+];
+
+// Enhanced slot engine with pattern matching
 export const simpleSlotEngine = {
   calculateSpinResult: (bet: number, upgrades: string[] = []): SpinResult => {
     const generateReels = (): string[][] => {
@@ -152,58 +261,36 @@ export const simpleSlotEngine = {
       return reels;
     };
 
-    const checkWinningCombinations = (reels: string[][]): WinningCombo[] => {
+    const checkWinningCombinations = (reels: string[][]): { winningCombos: WinningCombo[], activePatterns: WinPattern[] } => {
       const winningCombos: WinningCombo[] = [];
-      
-      // Check horizontal lines
-      for (let row = 0; row < 3; row++) {
-        const symbol = reels[0][row];
-        if (reels[1][row] === symbol && reels[2][row] === symbol && symbol !== 'void') {
+      const activePatterns: WinPattern[] = [];
+
+      // Check each win pattern
+      WIN_PATTERNS.forEach(pattern => {
+        const positions = pattern.positions;
+        const firstSymbol = reels[positions[0][0]][positions[0][1]];
+        
+        // Skip if first position is void
+        if (firstSymbol === 'void') return;
+        
+        // Check if all positions in pattern match the first symbol
+        const allMatch = positions.every(([reel, row]) => reels[reel][row] === firstSymbol);
+        
+        if (allMatch) {
+          // Add to winning combos
           winningCombos.push({
-            symbol,
-            count: 3,
-            payout: SYMBOLS[symbol].payout,
-            positions: [[0, row], [1, row], [2, row]]
+            symbol: firstSymbol,
+            count: positions.length,
+            payout: SYMBOLS[firstSymbol].payout * pattern.multiplier,
+            positions: positions
           });
+          
+          // Add to active patterns
+          activePatterns.push(pattern);
         }
-      }
-      
-      // Check vertical lines
-      for (let col = 0; col < 3; col++) {
-        const symbol = reels[col][0];
-        if (reels[col][1] === symbol && reels[col][2] === symbol && symbol !== 'void') {
-          winningCombos.push({
-            symbol,
-            count: 3,
-            payout: SYMBOLS[symbol].payout,
-            positions: [[col, 0], [col, 1], [col, 2]]
-          });
-        }
-      }
-      
-      // Check diagonal (top-left to bottom-right)
-      const diag1Symbol = reels[0][0];
-      if (reels[1][1] === diag1Symbol && reels[2][2] === diag1Symbol && diag1Symbol !== 'void') {
-        winningCombos.push({
-          symbol: diag1Symbol,
-          count: 3,
-          payout: SYMBOLS[diag1Symbol].payout,
-          positions: [[0, 0], [1, 1], [2, 2]]
-        });
-      }
-      
-      // Check diagonal (top-right to bottom-left)
-      const diag2Symbol = reels[2][0];
-      if (reels[1][1] === diag2Symbol && reels[0][2] === diag2Symbol && diag2Symbol !== 'void') {
-        winningCombos.push({
-          symbol: diag2Symbol,
-          count: 3,
-          payout: SYMBOLS[diag2Symbol].payout,
-          positions: [[2, 0], [1, 1], [0, 2]]
-        });
-      }
-      
-      return winningCombos;
+      });
+
+      return { winningCombos, activePatterns };
     };
 
     const calculateTotalWin = (winningCombos: WinningCombo[], betAmount: number): number => {
@@ -213,7 +300,7 @@ export const simpleSlotEngine = {
         totalWin += combo.payout * betAmount;
       });
       
-      // Jackpot for all reapers
+      // Jackpot for all reapers in any pattern
       if (winningCombos.length > 0 && winningCombos.every(combo => combo.symbol === 'reaper')) {
         totalWin += 1000 * betAmount;
       }
@@ -241,7 +328,7 @@ export const simpleSlotEngine = {
       return satisfaction || -2; // -2 if no wins
     };
 
-    const generateJournalEntry = (winAmount: number, winningCombos: WinningCombo[]): string => {
+    const generateJournalEntry = (winAmount: number, winningCombos: WinningCombo[], activePatterns: WinPattern[]): string => {
       if (winAmount === 0) {
         const lostEntries = [
           'The void consumes your offering...',
@@ -253,7 +340,15 @@ export const simpleSlotEngine = {
       }
       
       if (winningCombos.some(combo => combo.symbol === 'reaper')) {
+        if (activePatterns.some(pattern => pattern.id === 'full-grid')) {
+          return 'THE REAPER SMILES! Ultimate blessing upon you!';
+        }
         return 'DEATH SMILES UPON YOU! The Reaper is pleased.';
+      }
+      
+      if (activePatterns.some(pattern => pattern.type === 'special')) {
+        const specialPattern = activePatterns.find(p => p.type === 'special');
+        return `Ancient pattern activated: ${specialPattern?.name}!`;
       }
       
       if (winningCombos.some(combo => combo.symbol === 'biscuit')) {
@@ -274,7 +369,7 @@ export const simpleSlotEngine = {
     };
 
     const reels = generateReels();
-    const winningCombos = checkWinningCombinations(reels);
+    const { winningCombos, activePatterns } = checkWinningCombinations(reels);
     const winAmount = calculateTotalWin(winningCombos, bet);
     const horrorIncrease = calculateHorrorIncrease(winningCombos);
     
@@ -284,7 +379,8 @@ export const simpleSlotEngine = {
       horrorIncrease,
       satisfactionChange: calculateSatisfactionChange(winningCombos),
       winningCombos,
-      newJournalEntry: generateJournalEntry(winAmount, winningCombos)
+      activePatterns,
+      newJournalEntry: generateJournalEntry(winAmount, winningCombos, activePatterns)
     };
   }
 };
@@ -295,16 +391,28 @@ export const gameSlice = createSlice({
   reducers: {
     placeBet: (state) => {
       if (state.souls >= state.currentBet && !state.isSpinning) {
+        const result = simpleSlotEngine.calculateSpinResult(
+          state.currentBet,
+          state.unlockedUpgrades
+        );
+        
+        console.log('Spin result calculated in slice:', result);
+        
         state.souls -= state.currentBet;
         state.isSpinning = true;
         state.totalSpins += 1;
+        state.lastSpinResult = result;
+        state.activePatterns = result.activePatterns;
       }
     },
-    resolveSpin: (state, action) => {
-      const result: SpinResult = action.payload;
+    resolveSpin: (state) => {
+      if (!state.lastSpinResult) return;
+      
+      const result = state.lastSpinResult;
       state.isSpinning = false;
       state.currentReels = result.reels;
       state.winningCombos = result.winningCombos;
+      state.activePatterns = result.activePatterns;
       
       if (result.winAmount > 0) {
         state.souls += result.winAmount;
@@ -321,7 +429,6 @@ export const gameSlice = createSlice({
       state.horrorMeter = Math.min(100, state.horrorMeter + result.horrorIncrease);
       
       if (result.newJournalEntry) {
-        // Keep only last 10 journal entries
         if (state.journalEntries.length >= 10) {
           state.journalEntries.shift();
         }
@@ -331,7 +438,7 @@ export const gameSlice = createSlice({
       // Level up based on satisfaction
       if (state.reaperSatisfaction >= 100) {
         state.playerLevel += 1;
-        state.reaperSatisfaction = 50; // Reset but keep some progress
+        state.reaperSatisfaction = 50;
         state.journalEntries.push(`LEVEL ${state.playerLevel}! The Reaper grants you greater favor.`);
       }
 
@@ -345,9 +452,12 @@ export const gameSlice = createSlice({
       if (state.horrorMeter >= 80) {
         state.journalEntries.push('The darkness whispers terrible secrets...');
       }
+
+      // Clear the stored result
+      state.lastSpinResult = undefined;
     },
-    purchaseUpgrade: (state, action) => {
-      const upgrade: Upgrade = action.payload;
+    purchaseUpgrade: (state, action: PayloadAction<Upgrade>) => {
+      const upgrade = action.payload;
       if (state.souls >= upgrade.cost) {
         state.souls -= upgrade.cost;
         state.unlockedUpgrades.push(upgrade.id);
@@ -376,15 +486,15 @@ export const gameSlice = createSlice({
       }
     },
     resetGame: () => initialState,
-    loadGame: (state, action) => {
+    loadGame: (state, action: PayloadAction<Partial<GameState>>) => {
       return { ...state, ...action.payload };
     },
-    // New action for manual spin (for testing)
     manualSpin: (state) => {
       if (!state.isSpinning) {
         const result = simpleSlotEngine.calculateSpinResult(state.currentBet);
         state.currentReels = result.reels;
         state.winningCombos = result.winningCombos;
+        state.activePatterns = result.activePatterns;
         
         if (result.winAmount > 0) {
           state.souls += result.winAmount;
@@ -465,3 +575,6 @@ export const {
 } = gameSlice.actions;
 
 export default gameSlice.reducer;
+
+// Export all types for easy importing
+export type { Symbol, WinningCombo, SpinResult, Upgrade, GameState, WinPattern };

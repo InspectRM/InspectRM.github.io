@@ -1,22 +1,23 @@
 // src/components/SlotMachine/SlotReels.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import type { RootState } from '../../game/state/store';
-import { resolveSpin } from '../../game/state/gameSlice';
 import { SYMBOLS } from '../../game/state/gameSlice';
+import type { SpinResult } from '../../game/state/gameSlice';
 
 interface SlotReelsProps {
   isSpinning: boolean;
   onSpinStart: () => void;
   onSpinComplete: () => void;
+  lastSpinResult?: SpinResult;
 }
 
 export const SlotReels: React.FC<SlotReelsProps> = ({ 
   isSpinning, 
   onSpinStart, 
-  onSpinComplete 
+  onSpinComplete,
+  lastSpinResult
 }) => {
-  const dispatch = useDispatch();
   const gameState = useSelector((state: RootState) => state.game);
   
   const [displayReels, setDisplayReels] = useState<string[][]>(gameState.currentReels);
@@ -24,12 +25,13 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
   const [showWinHighlight, setShowWinHighlight] = useState(false);
   const spinIntervalRef = useRef<NodeJS.Timeout[]>([]);
   const spinTimeoutRef = useRef<NodeJS.Timeout[]>([]);
+  const finalReelsRef = useRef<string[][] | null>(null);
 
   // Cleanup intervals on unmount
   useEffect(() => {
     return () => {
-      spinIntervalRef.current.forEach(interval => clearInterval(interval));
-      spinTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      spinIntervalRef.current?.forEach(interval => interval && clearInterval(interval));
+      spinTimeoutRef.current?.forEach(timeout => timeout && clearTimeout(timeout));
     };
   }, []);
 
@@ -43,29 +45,32 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
 
   // Handle spin state changes
   useEffect(() => {
-    if (isSpinning) {
+    if (isSpinning && lastSpinResult) {
+      console.log('Starting spin animation with result:', lastSpinResult.reels);
+      finalReelsRef.current = lastSpinResult.reels;
       startSpinning();
     } else {
-      // If we were spinning but now stopped, ensure we show final reels
+      // When not spinning, ensure display matches current reels
       setDisplayReels(gameState.currentReels);
     }
-  }, [isSpinning, gameState.currentReels]);
+  }, [isSpinning, gameState.currentReels, lastSpinResult]);
 
   const startSpinning = () => {
+    console.log('Spin animation started');
     onSpinStart();
     setSpinningReels([true, true, true]);
     setShowWinHighlight(false);
 
     // Clear any existing intervals
-    spinIntervalRef.current.forEach(interval => clearInterval(interval));
-    spinTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+    spinIntervalRef.current?.forEach(interval => interval && clearInterval(interval));
+    spinTimeoutRef.current?.forEach(timeout => timeout && clearTimeout(timeout));
     spinIntervalRef.current = [];
     spinTimeoutRef.current = [];
 
-    // Start spinning animation for all reels
     const symbols = Object.keys(SYMBOLS);
     
     for (let reelIndex = 0; reelIndex < 3; reelIndex++) {
+      // Fast spinning phase
       const interval = setInterval(() => {
         setDisplayReels(prev => {
           const newReels = [...prev];
@@ -74,14 +79,23 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
           );
           return newReels;
         });
-      }, 100); // Fast spinning effect
+      }, 80); // Faster spinning for better effect
 
       spinIntervalRef.current.push(interval);
 
-      // Stop each reel with staggered timing
+      // Stop this reel after delay
       const timeout = setTimeout(() => {
         clearInterval(interval);
         
+        // Set this reel to the final result
+        if (finalReelsRef.current) {
+          setDisplayReels(prev => {
+            const newReels = [...prev];
+            newReels[reelIndex] = [...finalReelsRef.current![reelIndex]];
+            return newReels;
+          });
+        }
+
         setSpinningReels(prev => {
           const newSpinning = [...prev];
           newSpinning[reelIndex] = false;
@@ -91,31 +105,39 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
         // If all reels stopped, complete the spin
         if (reelIndex === 2) {
           setTimeout(() => {
+            console.log('All reels stopped, completing spin');
             completeSpin();
-          }, 500); // Brief pause after last reel stops
+          }, 500); // Slightly longer delay for dramatic effect
         }
-      }, 1000 + reelIndex * 500); // Staggered stop times
+      }, 800 + reelIndex * 400); // Staggered stopping
 
       spinTimeoutRef.current.push(timeout);
     }
   };
 
   const completeSpin = () => {
-    // Show final reels
-    setDisplayReels(gameState.currentReels);
+    console.log('Complete spin called');
     
-    // Show win animation if there are winning combos
-    if (gameState.winningCombos && gameState.winningCombos.length > 0) {
-      setShowWinHighlight(true);
+    // Ensure we're showing the final reels
+    if (finalReelsRef.current) {
+      setDisplayReels(finalReelsRef.current);
+      
+      if (lastSpinResult?.winningCombos && lastSpinResult.winningCombos.length > 0) {
+        console.log('Winning combos found:', lastSpinResult.winningCombos);
+        setShowWinHighlight(true);
+      }
     }
 
+    // Clear the final reels reference
+    finalReelsRef.current = null;
+    
     onSpinComplete();
   };
 
   const isWinningPosition = (reelIndex: number, symbolIndex: number): boolean => {
-    if (!showWinHighlight || !gameState.winningCombos) return false;
+    if (!showWinHighlight || !lastSpinResult?.winningCombos) return false;
     
-    return gameState.winningCombos.some(combo =>
+    return lastSpinResult.winningCombos.some(combo =>
       combo.positions.some(([reel, symbol]) => 
         reel === reelIndex && symbol === symbolIndex
       )
@@ -150,23 +172,34 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
             {reel.map((symbolId, symbolIndex) => {
               const symbol = SYMBOLS[symbolId];
               const isWinning = isWinningPosition(reelIndex, symbolIndex);
+              const isSpinningThisReel = spinningReels[reelIndex];
               
               return (
                 <div
                   key={symbolIndex}
                   className={`symbol ${symbolId} ${isWinning ? 'winning' : ''} ${
-                    spinningReels[reelIndex] ? 'symbol-spinning' : ''
+                    isSpinningThisReel ? 'symbol-spinning' : ''
                   }`}
                   style={{ 
                     borderColor: symbol.color,
                     boxShadow: isWinning ? `0 0 20px ${symbol.color}, 0 0 40px ${symbol.color}` : 'none',
-                    backgroundColor: isWinning ? `${symbol.color}20` : 'rgba(26, 26, 26, 0.9)'
+                    backgroundColor: isWinning ? `${symbol.color}20` : 'rgba(26, 26, 26, 0.9)',
+                    transform: isSpinningThisReel ? 'scale(1.05)' : 'scale(1)',
+                    transition: isSpinningThisReel ? 'all 0.1s ease' : 'all 0.3s ease'
                   }}
                 >
-                  <span className="symbol-emoji">{symbol.emoji}</span>
+                  <span 
+                    className="symbol-emoji"
+                    style={{
+                      filter: isSpinningThisReel ? 'blur(1px) brightness(1.3)' : 'none',
+                      transform: isSpinningThisReel ? 'rotate(5deg)' : 'rotate(0deg)'
+                    }}
+                  >
+                    {symbol.emoji}
+                  </span>
                   
                   {/* Win Effects */}
-                  {isWinning && (
+                  {isWinning && !isSpinningAnyReel && (
                     <>
                       <div className="win-sparkle"></div>
                       <div className="win-glow"></div>
@@ -174,7 +207,7 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
                   )}
                   
                   {/* Spin Effect */}
-                  {spinningReels[reelIndex] && (
+                  {isSpinningThisReel && (
                     <div className="spin-trail"></div>
                   )}
                 </div>
@@ -195,12 +228,12 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
       </div>
 
       {/* Win Display */}
-      {showWinHighlight && gameState.winningCombos && gameState.winningCombos.length > 0 && (
+      {showWinHighlight && lastSpinResult?.winningCombos && lastSpinResult.winningCombos.length > 0 && (
         <div className="win-display-overlay">
           <div className="win-message">
             <h3 className="win-title">SOULS CLAIMED!</h3>
             <div className="win-details">
-              {gameState.winningCombos.map((combo, index) => (
+              {lastSpinResult.winningCombos.map((combo, index) => (
                 <div key={index} className="win-combo">
                   <div className="combo-symbols">
                     {Array(combo.count).fill(0).map((_, i) => (
@@ -218,7 +251,21 @@ export const SlotReels: React.FC<SlotReelsProps> = ({
           </div>
         </div>
       )}
-
+    {showWinHighlight && gameState.activePatterns && gameState.activePatterns.length > 0 && (
+      <div className="active-patterns-overlay">
+        <div className="patterns-display">
+          <h4 className="patterns-title">ACTIVE PATTERNS</h4>
+          <div className="patterns-list">
+            {gameState.activePatterns.map((pattern, index) => (
+              <div key={index} className="active-pattern">
+                <span className="pattern-name">{pattern.name}</span>
+                <span className="pattern-multiplier">x{pattern.multiplier}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
       {/* Spin Status */}
       <div className="spin-status">
         {isSpinningAnyReel ? (
