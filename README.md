@@ -1,73 +1,66 @@
-# React + TypeScript + Vite
+# 🎰 Soul Reaper Slots
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A dark, horror-themed slot machine game where your soul is the ante and Death is the dealer. Built with React, TypeScript, and Redux.
 
-Currently, two official plugins are available:
+![Soul Reaper Slots](https://img.shields.io/badge/Game-Soul%20Reaper%20Slots-red)
+![React](https://img.shields.io/badge/React-18.x-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
+![Vite](https://img.shields.io/badge/Vite-5.x-purple)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🎮 Live Demo
 
-## React Compiler
+Play the game here: **[https://inspectrm.github.io](https://inspectrm.github.io)**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🕹️ About the Game
 
-## Expanding the ESLint configuration
+Soul Reaper Slots is a horror-themed casino experience where you gamble with souls instead of coins. The Reaper watches your every move, and your satisfaction determines your fate in the underworld.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Features
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- 🎰 **3x3 Slot Machine** with multiple win patterns
+- 👻 **Soul-Based Economy** - gamble with your very essence
+- ⚰️ **Reaper Satisfaction System** - keep Death happy or face consequences
+- 🍪 **Biscuit Offerings** - special items to please the Reaper
+- 🛒 **Dark Bazaar** - unlock powerful upgrades
+- 📖 **Reaper's Journal** - track your journey through the underworld
+- 🎨 **Gothic Horror Visuals** - immersive dark theme with animations
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🎯 How to Play
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Basic Rules
+1. **Place Your Bet**: Offer 1-10 souls per spin
+2. **Spin the Reels**: Match symbols to win souls back
+3. **Manage Resources**: Balance souls, biscuits, and Reaper satisfaction
+4. **Unlock Upgrades**: Purchase favors from the Dark Bazaar
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Winning Patterns
+- **Horizontal Lines**: 3 matching symbols in any row
+- **Vertical Lines**: 3 matching symbols in any column (bonus payout)
+- **2-of-a-Kind**: 2 matching symbols (smaller payout)
+- **Special Patterns**: Diagonals, crosses, and full grid matches
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Symbols & Payouts
+- 💀 **Skull**: 1.5x bet
+- 👻 **Soul**: 2x bet  
+- 🍪 **Biscuit**: 3x bet
+- ⚰️ **Reaper**: 8x bet
+- 🌀 **Void**: No payout (but 15% consolation)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 16+ 
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/InspectRM/InspectRM.github.io.git
+cd InspectRM.github.io
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
