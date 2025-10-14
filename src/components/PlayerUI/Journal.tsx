@@ -6,9 +6,9 @@ export const Journal: React.FC = () => {
   const journalEntries = useSelector((state: RootState) => state.game.journalEntries);
   const journalEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    journalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [journalEntries]);
+  // useEffect(() => {
+  //   journalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [journalEntries]);
 
   return (
     <div className="journal-container">
